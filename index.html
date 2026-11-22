@@ -45,12 +45,13 @@
       font-weight: bold;
       min-height: 1.5em;
     }
+    #result.error { color: #b00020; }
   </style>
 </head>
 <body>
   <main>
     <h1>Unit Converter</h1>
-    <p class="note">Version 1: kilometers and miles. More units are coming.</p>
+    <p class="note">Kilometers and miles, kilograms and pounds, Celsius and Fahrenheit.</p>
 
     <form id="converter-form">
       <label for="value">Number</label>
@@ -60,6 +61,10 @@
       <select id="direction">
         <option value="km-to-miles">Kilometers to miles</option>
         <option value="miles-to-km">Miles to kilometers</option>
+        <option value="kg-to-lb">Kilograms to pounds</option>
+        <option value="lb-to-kg">Pounds to kilograms</option>
+        <option value="c-to-f">Celsius to Fahrenheit</option>
+        <option value="f-to-c">Fahrenheit to Celsius</option>
       </select>
 
       <button type="submit">Convert</button>
@@ -74,25 +79,67 @@
     var direction = document.getElementById("direction");
     var result = document.getElementById("result");
 
+    var MAX_NUMBER = 1000000000;
+
+    // Which units each direction uses, for the result text.
+    var labels = {
+      "km-to-miles": ["km", "miles"],
+      "miles-to-km": ["miles", "km"],
+      "kg-to-lb": ["kg", "lb"],
+      "lb-to-kg": ["lb", "kg"],
+      "c-to-f": ["\u00B0C", "\u00B0F"],
+      "f-to-c": ["\u00B0F", "\u00B0C"]
+    };
+
+    function convert(dir, number) {
+      if (dir === "km-to-miles") {
+        return number * 0.621371;
+      } else if (dir === "miles-to-km") {
+        return number / 0.621371;
+      } else if (dir === "kg-to-lb") {
+        return number * 2.20462;
+      } else if (dir === "lb-to-kg") {
+        return number / 2.20462;
+      } else if (dir === "c-to-f") {
+        return number * 1.8 + 32;
+      } else {
+        return (number - 32) / 1.8;
+      }
+    }
+
+    function showError(message) {
+      result.className = "error";
+      result.textContent = message;
+    }
+
     form.addEventListener("submit", function (event) {
       event.preventDefault();
 
-      // Basic check: the box must not be empty.
+      // Check 1: the box must not be empty.
       if (input.value === "") {
-        result.textContent = "Please type a number.";
+        showError("Please type a number.");
         return;
       }
 
       var number = Number(input.value);
-      var answer;
 
-      if (direction.value === "km-to-miles") {
-        answer = number * 0.621371;
-        result.textContent = number + " km = " + Number(answer.toFixed(4)) + " miles";
-      } else {
-        answer = number / 0.621371;
-        result.textContent = number + " miles = " + Number(answer.toFixed(4)) + " km";
+      // Check 2: it must be a real number, not NaN or Infinity.
+      if (!isFinite(number)) {
+        showError("Please type a valid number.");
+        return;
       }
+
+      // Check 3: it must not be too big.
+      if (Math.abs(number) > MAX_NUMBER) {
+        showError("The number is too big. Use a number up to 1,000,000,000.");
+        return;
+      }
+
+      var answer = convert(direction.value, number);
+      var unit = labels[direction.value];
+
+      result.className = "";
+      result.textContent = number + " " + unit[0] + " = " + Number(answer.toFixed(4)) + " " + unit[1];
     });
   </script>
 </body>
